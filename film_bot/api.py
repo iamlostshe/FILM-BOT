@@ -1,209 +1,198 @@
-"""@package docstring
-Documentation for this module.
+"""Documentation for this module.
 
-Телеграм бот реализован с помощью библиотеки telebot, позволяющей работать с Telegram Bot API.
-Для работы с базой данных используется библиотека sqlite3, позволяющая формировать запросы к облегченной базе данных.
+Телеграм бот реализован с помощью библиотеки telebot, позволяющей работать с
+Telegram Bot API.
+Для работы с базой данных используется библиотека sqlite3, позволяющая формировать
+запросы к облегченной базе данных.
 
-Работа бота осуществляется классом DoranimeBot и сопутствующими функциями для работы с базой данных, для обращения к API Кинопоиска.
+Работа бота осуществляется классом DoranimeBot и сопутствующими функциями для работы с
+базой данных, для обращения к API Кинопоиска.
 Для удобства использования добавлены кнопки в основное меню.
 Запуск бота осуществляется с помощью файла "Main.py".
 """
 # @section author_doxygen_example Author(s)
 # Created by:
-# * Pustovalova Sofya Alekseevna \n
-# * Zavyalova Polina Igorevna \n
-# * Peeva Olesya Romanovna \n
-# * Kramarenko Yuri Andreevich \n
+# * Pustovalova Sofya Alekseevna
+# * Zavyalova Polina Igorevna
+# * Peeva Olesya Romanovna
+# * Kramarenko Yuri Andreevich
 # on 16/06/2024.
 
-# Imports
+import json
 import textwrap
 
-import requests
+from aiohttp import ClientSession
+from loguru import logger
 
 from film_bot.config import config
 
 URL = "https://api.kinopoisk.dev/v1.4/"
 HEADERS = {"X-API-KEY": config.kinopoisk_api_key}
 
-def genre_search(message, type):
-    """Function for searching by genre.
 
-    :param message: user's message
-    :param type: anime or dorama
-    :return: result (anime or dorama)
-    """
-    message = "".join(message.split())
-    genres = message.split(",")
+class API:
+    """class for interacting with api."""
 
-    if type == "аниме":
+    def __init__(self) -> None:
+        """Just init function."""
+        self.session = ClientSession()
+
+    async def _request(self, url: str, params: dict[str:any]) -> any:
+        """Do a request."""
+        async with self.session.get(URL + url, headers=HEADERS, params=params) as r:
+            status_code = r.status
+            if status_code == 200:  # noqa: PLR2004
+                return json.loads(await r.text())
+        logger.error("Сервер вернул неожиданный статус-код: {}", status_code)
+        return None
+
+    async def genre_search(self, message_text: str, film_type: str) -> str:
+        """Func for search by genre.
+
+        :param message: user's message
+        :param type: anime or dorama
+        :return: result (anime or dorama)
+        """
+        message = "".join(message_text.split())
+        genres = message.split(",")
+
         params = {
             "notNullFields": ["name", "description"],
-            "type": ["anime"],
             "genres.name": genres,
         }
-    else:
+
+        if film_type == "аниме":
+            params["type"] = ["anime"]
+        else:
+            params["type"] = ["tv-series"]
+            params["countries.name"] = ["Корея Южная", "Япония", "Китай"]
+
+        data = await self._request("movie", params)
+        if data:
+            docs = data["docs"]
+            return "\n".join(
+                [
+                    f"{i + 1}. {film['name']}, {film['year']}\n\n{
+                        textwrap.fill(film['description'], 100)
+                    }"
+                    for i, film in enumerate(docs)
+                ],
+            )
+
+        return "Не удалось получить данные."
+
+    async def title_search(self, message_text: str) -> str:
+        """Func for searching by name.
+
+        :param message: user's message
+        :return: result (anime or dorama)
+        """
         params = {
-            "notNullFields": ["name", "description"],
-            "type": ["tv-series"],
-            "countries.name": ["Корея Южная", "Япония", "Китай"],
-            "genres.name": genres,
+            "query": message_text,
         }
-    response = requests.get(URL + "movie", headers=HEADERS, params=params)
+        data = await self._request("movie/search", params=params)
+        if data:
+            docs = data["docs"][0]
+            return f"{docs['name']}, {docs['year']}\n\n{
+                textwrap.fill(docs['description'], 100)
+            }"
 
-    if response.status_code == 200:
-        data = response.json()["docs"]
-        result = ""
-        for i in range(len(data)):
-            name = data[i]["name"]
-            description = data[i]["description"]
-            year = data[i]["year"]
-            result += f"{i + 1}. {name}, {year} \n {textwrap.fill(description, 100)} \n"
-    else:
-        print("Не удалось подключиться:(")
+        return "Не удалось получить данные."
 
-    return result
+    async def actor_search(self, message_text: str) -> str:
+        """Func for searching by actor.
 
+        :param message: user's message
+        :return: result (anime or dorama)
+        """
+        actor = message_text.replace(", ", ",").split(",")
 
-def title_search(message):
-    """Function for searching by name.
+        params = {
+            "query": actor,
+        }
+        data = await self._request("person/search", params=params)
+        if data:
+            actor_id = data["docs"][0]["id"]
 
-    :param message: user's message
-    :return: result (anime or dorama)
-    """
-    title = message
+            params = {
+                "notNullFields": ["description"],
+                "type": ["tv-series"],
+                "countries.name": ["Корея Южная", "Япония", "Китай"],
+            }
 
-    params = {
-        "query": title,
-    }
-    response = requests.get(URL + "movie/search", headers=HEADERS, params=params)
+            data = await self._request(
+                f"movie?page=1&limit=10&persons.id={actor_id}",
+                params=params,
+            )
 
-    if response.status_code == 200:
-        data = response.json()["docs"][0]
-        name = data["name"]
-        description = data["description"]
-        year = data["year"]
-        result = f"{name}, {year} \n {textwrap.fill(description, 100)} \n"
-    else:
-        print("Не удалось подключиться:(")
+            if data:
+                docs = data["docs"]
+                return "\n".join(
+                    [
+                        f"{i + 1}. {film[i]['name']}, {film[i]['year']}\n\n{
+                            textwrap.fill(film[i]['description'], 100)
+                        }"
+                        for i, film in enumerate(docs)
+                    ],
+                )
+        return "Не удалось получить данные."
 
-    return result
+    async def year_search(self, message_text: str, film_type: str) -> str:
+        """Func for searching by years.
 
+        :param message: user's message
+        :param type: anime or dorama
+        :return: result (anime or dorama)
+        """
+        year = message_text.replace(" ", "")
 
-def actor_search(message):
-    """Function for searching by actor.
-
-    :param message: user's message
-    :return: result (anime or dorama)
-    """
-    result = ""
-    message.replace(", ", ",")
-    actor = message.split(",")
-
-    params = {
-        "query": actor,
-    }
-    response = requests.get(URL + "person/search", headers=HEADERS, params=params)
-
-    if response.status_code == 200:
-        actor_id = response.json()["docs"][0]["id"]
-    else:
-        print("Не удалось подключиться:(")
-
-    params = {
-        "notNullFields": ["description"],
-        "type": ["tv-series"],
-        "countries.name": ["Корея Южная", "Япония", "Китай"],
-    }
-
-    response = requests.get(
-        f"{URL}movie?page=1&limit=10&persons.id={actor_id}",
-        headers=HEADERS,
-        params=params,
-    )
-
-    if response.status_code == 200:
-        data = response.json()["docs"]
-        result = ""
-        for i in range(len(data)):
-            name = data[i]["name"]
-            year = data[i]["year"]
-            description = data[i]["description"]
-            result += f"{i + 1}. {name}, {year} \n {textwrap.fill(description, 100)} \n"
-    else:
-        print("Не удалось подключиться:(")
-
-    return result
-
-
-def year_search(message, type):
-    """Function for searching by years.
-
-    :param message: user's message
-    :param type: anime or dorama
-    :return: result (anime or dorama)
-    """
-    year = message.replace(" ", "")
-
-    if type == "аниме":
         params = {
             "notNullFields": ["name", "description"],
             "year": year,
-            "type": ["anime"],
-        }
-    else:
-        params = {
-            "notNullFields": ["name", "description"],
-            "year": year,
-            "type": ["tv-series"],
-            "countries.name": ["Корея Южная", "Япония", "Китай"],
         }
 
-    response = requests.get(URL + "movie", headers=HEADERS, params=params)
+        if film_type == "аниме":
+            params["type"] = ["anime"]
+        else:
+            params["type"] = ["tv-series"]
+            params["countries.name"] = ["Корея Южная", "Япония", "Китай"]
 
-    if response.status_code == 200:
-        data = response.json()["docs"]
-        result = ""
-        for i in range(len(data)):
-            name = data[i]["name"]
-            description = data[i]["description"]
-            year = data[i]["year"]
-            result += f"{i + 1}.{name}, {year} \n {textwrap.fill(description, 100)} \n"
-    else:
-        print("Не удалось подключиться:(")
+        data = await self._request("movie", params=params)
+        if data:
+            docs = data["docs"]
+            return "\n".join(
+                [
+                    f"{i + 1}. {film['name']}, {film['year']}\n\n{
+                        textwrap.fill(film['description'], 100)
+                    }"
+                    for i, film in enumerate(docs)
+                ],
+            )
 
-    return result
+        return "Не удалось получить данные."
 
+    async def random_dorama(self, film_type: str) -> str:
+        """Func for searching random dorama.
 
-def random_dorama(type):
-    """Function for searching random dorama.
+        :param type: anime or dorama
+        :return: result (anime or dorama)
+        """
+        if film_type == "аниме":
+            params = {
+                "notNullFields": ["name", "description"],
+                "type": ["anime"],
+            }
+        else:
+            params = {
+                "notNullFields": ["name", "description"],
+                "type": ["tv-series"],
+                "countries.name": ["Корея Южная", "Япония", "Китай"],
+            }
 
-    :param type: anime or dorama
-    :return: result (anime or dorama)
-    """
-    if type == "аниме":
-        params = {
-            "notNullFields": ["name", "description"],
-            "type": ["anime"],
-        }
-    else:
-        params = {
-            "notNullFields": ["name", "description"],
-            "type": ["tv-series"],
-            "countries.name": ["Корея Южная", "Япония", "Китай"],
-        }
+        data = await self._request("movie/random", params=params)
+        if data:
+            return f"{data["name"]}, {data["year"]}\n\n{
+                textwrap.fill(data["description"], 100)
+            }"
 
-    response = requests.get(URL + "movie/random", headers=HEADERS, params=params)
-
-    if response.status_code == 200:
-        print("OK")
-        data = response.json()
-        print(data)
-        name = data["name"]
-        description = data["description"]
-        year = data["year"]
-        result = f"{name}, {year} \n {textwrap.fill(description, 100)} \n"
-    else:
-        print("Не удалось подключиться:(")
-
-    return result
+        return "Не удалось получить данные."

@@ -7,7 +7,7 @@ from pydantic import SecretStr
 from telebot import types
 
 
-class Bot:
+class FilmBot:
     def __init__(self, token: SecretStr):
         """Initialization
 
