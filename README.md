@@ -42,7 +42,7 @@ Telegram бот DoranimeBot <img src="https://media.tenor.com/9ZsRZ-PXPlwAAAAi/t
 - работа с “Избранным” (‘Избранное’/’Добавить в избранное’/’Удалить из избранного’ - пользователь вводит название, бот обрабатывает и работает с персональным списком пользователя)  
 - случайная дорама или аниме (бот выведет информацию о случайной дораме или аниме из базы)
     
-# [![Typing SVG](https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=30&pause=1000&random=false&width=435&height=40&lines=Api)](https://git.io/typing-svg)
+# [![Typing SVG](https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=30&pause=1000&random=false&width=435&height=40&lines=api)](https://git.io/typing-svg)
 Для поиска дорам и аниме использовалось api с сайта https://kinopoisk.dev/  
 
 ## [![Typing SVG](https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=30&pause=1000&random=false&width=435&height=40&lines=%D0%9B%D0%BE%D0%BA%D0%B0%D0%BB%D1%8C%D0%BD%D0%B0%D1%8F+%D1%81%D0%B1%D0%BE%D1%80%D0%BA%D0%B0)](https://git.io/typing-svg)

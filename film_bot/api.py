@@ -20,7 +20,8 @@ Documentation for this module.
 import textwrap
 
 import requests
-from config import config
+
+from film_bot.config import config
 
 URL = "https://api.kinopoisk.dev/v1.4/"
 HEADERS = {"X-API-KEY": config.kinopoisk_api_key}

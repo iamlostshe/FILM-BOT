@@ -1,15 +1,14 @@
 """import moduls"""
 import sqlite3
 
-import Api
-import GeneralMessages
 import telebot
 from dorama_and_anime import Anime, Dorama
+from pydantic import SecretStr
 from telebot import types
 
 
-class DoranimeBot:
-    def __init__(self, token: str):
+class Bot:
+    def __init__(self, token: SecretStr):
         """Initialization
 
         :param token: TeleBot token
@@ -131,13 +130,13 @@ class DoranimeBot:
         elif (message.text == "Случайная дорама 💡"):
             type = "дорама"
             msg = self.bot.send_message(message.chat.id, "Держи случайную дораму, надеюсь, что тебе она понравится 😊\n")
-            information = Api.random_dorama(type)
+            information = api.random_dorama(type)
             self.bot.send_message(message.chat.id, information)
 
         elif (message.text == "Случайное аниме 💡"):
             type = "аниме"
             msg = self.bot.send_message(message.chat.id, "Держи случайное аниме, надеюсь, что тебе оно понравится 😊\n")
-            information = Api.random_dorama(type)
+            information = api.random_dorama(type)
             self.bot.send_message(message.chat.id, information)
 
         elif (message.text == "Добавить в Избранное 📝"):
@@ -282,25 +281,25 @@ class DoranimeBot:
     def process_title_search(self, message):
         chat_id = message.chat.id
         title = message.text
-        information = Api.title_search(title)
+        information = api.title_search(title)
         self.bot.send_message(chat_id, information)
 
     def process_genre_search(self, message):
         chat_id = message.chat.id
         genre = message.text
-        information = Api.genre_search(genre, self.type)
+        information = api.genre_search(genre, self.type)
         self.bot.send_message(chat_id, information)
 
     def process_actor_search(self, message):
         chat_id = message.chat.id
         title = message.text
-        information = Api.title_search(title)
+        information = api.title_search(title)
         self.bot.send_message(chat_id, information)
 
     def process_year_search(self, message):
         chat_id = message.chat.id
         year = message.text
-        information = Api.year_search(year, self.type)
+        information = api.year_search(year, self.type)
         self.bot.send_message(chat_id, information)
 
     def run(self):
