@@ -17,195 +17,194 @@ Documentation for this module.
 #on 16/06/2024.
 
 # Imports
-import requests
 import textwrap
 
+import requests
 
-API = 'EXJ45X6-NF9MGN7-JA5CJJQ-M14FMA9'  # введите свой токен (ссылка для получения: https://kinopoisk.dev/)
-URL = 'https://api.kinopoisk.dev/v1.4/'
+API = "EXJ45X6-NF9MGN7-JA5CJJQ-M14FMA9"  # введите свой токен (ссылка для получения: https://kinopoisk.dev/)
+URL = "https://api.kinopoisk.dev/v1.4/"
 
 
 def genre_search(message, type):
-    """function for searching by genre.
+    """Function for searching by genre.
 
     :param message: user's message
     :param type: anime or dorama
     :return: result (anime or dorama)
     """
-
-    message = ''.join(message.split())
+    message = "".join(message.split())
     genres = message.split(",")
 
-    headers = {'X-API-KEY': API}
-    if type == 'аниме':
+    headers = {"X-API-KEY": API}
+    if type == "аниме":
         params = {
-            'notNullFields': ['name', 'description'],
-            'type': ['anime'],
-            'genres.name': genres
+            "notNullFields": ["name", "description"],
+            "type": ["anime"],
+            "genres.name": genres,
         }
     else:
         params = {
-            'notNullFields': ['name', 'description'],
-            'type': ['tv-series'],
-            'countries.name': ['Корея Южная', 'Япония', 'Китай'],
-            'genres.name': genres
+            "notNullFields": ["name", "description"],
+            "type": ["tv-series"],
+            "countries.name": ["Корея Южная", "Япония", "Китай"],
+            "genres.name": genres,
         }
-    response = requests.get(URL + 'movie', headers=headers, params=params)
+    response = requests.get(URL + "movie", headers=headers, params=params)
 
     if response.status_code == 200:
-        data = response.json()['docs']
-        result = ''
+        data = response.json()["docs"]
+        result = ""
         for i in range(len(data)):
-            name = data[i]['name']
-            description = data[i]['description']
-            year = data[i]['year']
-            result += f'{i+1}. {name}, {year} \n {textwrap.fill(description, 100)} \n'
+            name = data[i]["name"]
+            description = data[i]["description"]
+            year = data[i]["year"]
+            result += f"{i+1}. {name}, {year} \n {textwrap.fill(description, 100)} \n"
     else:
-        print('Не удалось подключиться:(')
+        print("Не удалось подключиться:(")
 
     return result
 
 
 def title_search(message):
-    """function for searching by name.
+    """Function for searching by name.
 
     :param message: user's message
     :return: result (anime or dorama)
     """
     title = message
 
-    headers = {'X-API-KEY': API}
+    headers = {"X-API-KEY": API}
     params = {
-        'query': title
+        "query": title,
     }
-    response = requests.get(URL + 'movie/search', headers=headers, params=params)
+    response = requests.get(URL + "movie/search", headers=headers, params=params)
 
     if response.status_code == 200:
-        data = response.json()['docs'][0]
-        name = data['name']
-        description = data['description']
-        year = data['year']
-        result = f'{name}, {year} \n {textwrap.fill(description, 100)} \n'
+        data = response.json()["docs"][0]
+        name = data["name"]
+        description = data["description"]
+        year = data["year"]
+        result = f"{name}, {year} \n {textwrap.fill(description, 100)} \n"
     else:
-        print('Не удалось подключиться:(')
+        print("Не удалось подключиться:(")
 
     return result
 
 
 def actor_search(message):
-    """function for searching by actor.
+    """Function for searching by actor.
 
     :param message: user's message
     :return: result (anime or dorama)
     """
-    result = ''
-    message.replace(', ', ',')
+    result = ""
+    message.replace(", ", ",")
     actor = message.split(",")
 
-    headers = {'X-API-KEY': API}
+    headers = {"X-API-KEY": API}
 
     params = {
-        'query': actor
+        "query": actor,
     }
-    response = requests.get(URL + 'person/search', headers=headers, params=params)
+    response = requests.get(URL + "person/search", headers=headers, params=params)
 
     if response.status_code == 200:
-        actor_id = response.json()['docs'][0]['id']
+        actor_id = response.json()["docs"][0]["id"]
     else:
-        print('Не удалось подключиться:(')
+        print("Не удалось подключиться:(")
 
-    params = {'notNullFields': ['description'],
-              'type': ['tv-series'],
-              'countries.name': ['Корея Южная', 'Япония', 'Китай']
+    params = {"notNullFields": ["description"],
+              "type": ["tv-series"],
+              "countries.name": ["Корея Южная", "Япония", "Китай"],
               }
 
-    response = requests.get(f'{URL}movie?page=1&limit=10&persons.id={actor_id}', headers=headers, params=params)
+    response = requests.get(f"{URL}movie?page=1&limit=10&persons.id={actor_id}", headers=headers, params=params)
 
     if response.status_code == 200:
-        data = response.json()['docs']
-        result = ''
+        data = response.json()["docs"]
+        result = ""
         for i in range(len(data)):
-            name = data[i]['name']
-            year = data[i]['year']
-            description = data[i]['description']
-            result += f'{i + 1}. {name}, {year} \n {textwrap.fill(description, 100)} \n'
+            name = data[i]["name"]
+            year = data[i]["year"]
+            description = data[i]["description"]
+            result += f"{i + 1}. {name}, {year} \n {textwrap.fill(description, 100)} \n"
     else:
-        print('Не удалось подключиться:(')
+        print("Не удалось подключиться:(")
 
     return result
 
 
 def year_search(message, type):
-    """function for searching by years.
+    """Function for searching by years.
 
-        :param message: user's message
-        :param type: anime or dorama
-        :return: result (anime or dorama)
-        """
-    year = message.replace(' ', '')
+    :param message: user's message
+    :param type: anime or dorama
+    :return: result (anime or dorama)
+    """
+    year = message.replace(" ", "")
 
-    headers = {'X-API-KEY': API}
-    if type == 'аниме':
+    headers = {"X-API-KEY": API}
+    if type == "аниме":
         params = {
-            'notNullFields': ['name', 'description'],
-            'year': year,
-            'type': ['anime']
+            "notNullFields": ["name", "description"],
+            "year": year,
+            "type": ["anime"],
         }
     else:
         params = {
-            'notNullFields': ['name', 'description'],
-            'year': year,
-            'type': ['tv-series'],
-            'countries.name': ['Корея Южная', 'Япония', 'Китай']
+            "notNullFields": ["name", "description"],
+            "year": year,
+            "type": ["tv-series"],
+            "countries.name": ["Корея Южная", "Япония", "Китай"],
         }
 
-    response = requests.get(URL + 'movie', headers=headers, params=params)
+    response = requests.get(URL + "movie", headers=headers, params=params)
 
     if response.status_code == 200:
-        data = response.json()['docs']
-        result = ''
+        data = response.json()["docs"]
+        result = ""
         for i in range(len(data)):
-            name = data[i]['name']
-            description = data[i]['description']
-            year = data[i]['year']
-            result += f'{i+1}.{name}, {year} \n {textwrap.fill(description, 100)} \n'
+            name = data[i]["name"]
+            description = data[i]["description"]
+            year = data[i]["year"]
+            result += f"{i+1}.{name}, {year} \n {textwrap.fill(description, 100)} \n"
     else:
-        print('Не удалось подключиться:(')
+        print("Не удалось подключиться:(")
 
     return result
 
 
 def random_dorama(type):
-    """function for searching random dorama.
+    """Function for searching random dorama.
 
-        :param type: anime or dorama
-        :return: result (anime or dorama)
-        """
-    headers = {'X-API-KEY': API}
+    :param type: anime or dorama
+    :return: result (anime or dorama)
+    """
+    headers = {"X-API-KEY": API}
 
-    if type == 'аниме':
+    if type == "аниме":
         params = {
-            'notNullFields': ['name', 'description'],
-            'type': ['anime']
+            "notNullFields": ["name", "description"],
+            "type": ["anime"],
         }
     else:
         params = {
-            'notNullFields': ['name', 'description'],
-            'type': ['tv-series'],
-            'countries.name': ['Корея Южная', 'Япония', 'Китай']
+            "notNullFields": ["name", "description"],
+            "type": ["tv-series"],
+            "countries.name": ["Корея Южная", "Япония", "Китай"],
         }
 
-    response = requests.get(URL + 'movie/random', headers=headers, params=params)
+    response = requests.get(URL + "movie/random", headers=headers, params=params)
 
     if response.status_code == 200:
-        print('OK')
+        print("OK")
         data = response.json()
         print(data)
-        name = data['name']
-        description = data['description']
-        year = data['year']
-        result = f'{name}, {year} \n {textwrap.fill(description, 100)} \n'
+        name = data["name"]
+        description = data["description"]
+        year = data["year"]
+        result = f"{name}, {year} \n {textwrap.fill(description, 100)} \n"
     else:
-        print('Не удалось подключиться:(')
+        print("Не удалось подключиться:(")
 
     return result
