@@ -1,0 +1,10 @@
+[project]
+name = "film-bot"
+version = "0.1.0"
+description = "Telegram bot for selecting anime and doramas"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[tool.ruff.lint]
+select = ["ALL"]
