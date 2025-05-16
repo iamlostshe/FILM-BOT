@@ -6,6 +6,8 @@ from pydantic_settings import BaseSettings
 
 
 class Config(BaseSettings):
+    """Get values from .env."""
+
     telegam_bot_token: str
     kinopoisk_api_key: str
 

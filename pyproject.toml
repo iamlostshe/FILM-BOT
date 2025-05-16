@@ -11,3 +11,6 @@ dependencies = [
 
 [tool.ruff.lint]
 select = ["ALL"]
+ignore = [
+    "RUF001", "RUF002", "RUF003",
+]
