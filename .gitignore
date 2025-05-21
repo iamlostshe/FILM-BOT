@@ -4,3 +4,6 @@ venv
 .venv
 uv.lock
 .env
+index.db
+.ruff_cache
+.mypy_cache

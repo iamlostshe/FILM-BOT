@@ -5,7 +5,6 @@ description = "Telegram bot for selecting anime and doramas"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "requests==2.32.3",
     "pydantic-settings==2.9.1",
     "aiogram==3.20.0.post0",
     "loguru==0.7.3",
@@ -15,4 +14,5 @@ dependencies = [
 select = ["ALL"]
 ignore = [
     "RUF001", "RUF002", "RUF003",
+    "FIX002", "TD002", "TD003",
 ]
