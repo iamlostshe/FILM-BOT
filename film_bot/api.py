@@ -1,4 +1,4 @@
-"""Documentation for this module.
+"""Модуль для взаимодейсктвия с API.
 
 Телеграм бот реализован с помощью библиотеки telebot, позволяющей работать с
 Telegram Bot API.
@@ -10,6 +10,7 @@ Telegram Bot API.
 Для удобства использования добавлены кнопки в основное меню.
 Запуск бота осуществляется с помощью файла "Main.py".
 """
+
 # @section author_doxygen_example Author(s)
 # Created by:
 # * Pustovalova Sofya Alekseevna
@@ -30,46 +31,61 @@ URL = "https://api.kinopoisk.dev/v1.4/"
 HEADERS = {"X-API-KEY": config.kinopoisk_api_key}
 
 
-class API:
-    """class for interacting with api."""
+def get_params(film_type: str) -> dict[str:any]:
+    """Func for get params by film type."""
+    params = {
+        "notNullFields": ["name", "description"],
+    }
 
-    def __init__(self) -> None:
+    if film_type == "аниме":
+        params["type"] = ["anime"]
+
+    elif film_type == "дорама":
+        params["type"] = ["tv-series"]
+        params["countries.name"] = ["Корея Южная", "Япония", "Китай"]
+
+    return params
+
+
+def normalize_user_input(user_input: str) -> list:
+    """Func to normalize user input."""
+    return user_input.replace(", ", ",").split(",")
+
+
+class API:
+    """Class for interacting with API."""
+
+    async def init(self) -> None:
         """Just init function."""
-        self.session = ClientSession()
+        self.session = ClientSession(base_url=URL)
 
     async def _request(self, url: str, params: dict[str:any]) -> any:
         """Do a request."""
-        async with self.session.get(URL + url, headers=HEADERS, params=params) as r:
+        async with self.session.get(url, headers=HEADERS, params=params) as r:
             status_code = r.status
             if status_code == 200:  # noqa: PLR2004
-                return json.loads(await r.text())
+                text = await r.text()
+                logger.debug(text)
+                return json.loads(text)
         logger.error("Сервер вернул неожиданный статус-код: {}", status_code)
         return None
 
-    async def genre_search(self, message_text: str, film_type: str) -> str:
+    async def from_genre(self, genres: str, film_type: str) -> str:
         """Func for search by genre.
 
         :param message: user's message
-        :param type: anime or dorama
+        :param film_type: anime or dorama
         :return: result (anime or dorama)
         """
-        message = "".join(message_text.split())
-        genres = message.split(",")
+        # Forming request parameters
+        params = get_params(film_type)
+        params["genres.name"] = normalize_user_input(genres)
 
-        params = {
-            "notNullFields": ["name", "description"],
-            "genres.name": genres,
-        }
-
-        if film_type == "аниме":
-            params["type"] = ["anime"]
-        else:
-            params["type"] = ["tv-series"]
-            params["countries.name"] = ["Корея Южная", "Япония", "Китай"]
-
+        # Sending a request to the API
         data = await self._request("movie", params)
         if data:
             docs = data["docs"]
+            # Forming a message
             return "\n".join(
                 [
                     f"{i + 1}. {film['name']}, {film['year']}\n\n{
@@ -81,52 +97,54 @@ class API:
 
         return "Не удалось получить данные."
 
-    async def title_search(self, message_text: str) -> str:
+    async def from_title(self, query: str, film_type: str) -> str:
         """Func for searching by name.
 
-        :param message: user's message
+        :param query: user's query
+        :param film_type: anime or dorama
         :return: result (anime or dorama)
         """
-        params = {
-            "query": message_text,
-        }
+        # Forming request parameters
+        params = get_params(film_type)
+        params["query"] = query
+
+        # Sending a request to the API
         data = await self._request("movie/search", params=params)
         if data:
             docs = data["docs"][0]
+            # Forming a message
             return f"{docs['name']}, {docs['year']}\n\n{
                 textwrap.fill(docs['description'], 100)
             }"
 
         return "Не удалось получить данные."
 
-    async def actor_search(self, message_text: str) -> str:
+    async def from_actor(self, actor: str, film_type: str) -> str:
         """Func for searching by actor.
 
         :param message: user's message
+        :param film_type: anime or dorama
         :return: result (anime or dorama)
         """
-        actor = message_text.replace(", ", ",").split(",")
+        # Forming request parameters
+        params = {"query": normalize_user_input(actor)}
 
-        params = {
-            "query": actor,
-        }
+        # Sending a request to the API
         data = await self._request("person/search", params=params)
         if data:
             actor_id = data["docs"][0]["id"]
 
-            params = {
-                "notNullFields": ["description"],
-                "type": ["tv-series"],
-                "countries.name": ["Корея Южная", "Япония", "Китай"],
-            }
+            # Forming request parameters
+            params = get_params(film_type)
+            params["persons.id"] = actor_id
+            params["page"] = 1
+            params["limit"] = 10
 
-            data = await self._request(
-                f"movie?page=1&limit=10&persons.id={actor_id}",
-                params=params,
-            )
-
+            # Sending a request to the API
+            data = await self._request("movie", params=params)
             if data:
                 docs = data["docs"]
+                # Forming a message
                 return "\n".join(
                     [
                         f"{i + 1}. {film[i]['name']}, {film[i]['year']}\n\n{
@@ -135,31 +153,25 @@ class API:
                         for i, film in enumerate(docs)
                     ],
                 )
+
         return "Не удалось получить данные."
 
-    async def year_search(self, message_text: str, film_type: str) -> str:
+    async def from_year(self, year: str, film_type: str) -> str:
         """Func for searching by years.
 
         :param message: user's message
         :param type: anime or dorama
         :return: result (anime or dorama)
         """
-        year = message_text.replace(" ", "")
+        # Forming request parameters
+        params = get_params(film_type)
+        params["year"] = year
 
-        params = {
-            "notNullFields": ["name", "description"],
-            "year": year,
-        }
-
-        if film_type == "аниме":
-            params["type"] = ["anime"]
-        else:
-            params["type"] = ["tv-series"]
-            params["countries.name"] = ["Корея Южная", "Япония", "Китай"]
-
+        # Sending a request to the API
         data = await self._request("movie", params=params)
         if data:
             docs = data["docs"]
+            # Forming a message
             return "\n".join(
                 [
                     f"{i + 1}. {film['name']}, {film['year']}\n\n{
@@ -171,28 +183,21 @@ class API:
 
         return "Не удалось получить данные."
 
-    async def random_dorama(self, film_type: str) -> str:
+    async def random(self, film_type: str) -> str:
         """Func for searching random dorama.
 
         :param type: anime or dorama
         :return: result (anime or dorama)
         """
-        if film_type == "аниме":
-            params = {
-                "notNullFields": ["name", "description"],
-                "type": ["anime"],
-            }
-        else:
-            params = {
-                "notNullFields": ["name", "description"],
-                "type": ["tv-series"],
-                "countries.name": ["Корея Южная", "Япония", "Китай"],
-            }
+        # Forming request parameters
+        params = get_params(film_type)
 
+        # Sending a request to the API
         data = await self._request("movie/random", params=params)
         if data:
-            return f"{data["name"]}, {data["year"]}\n\n{
-                textwrap.fill(data["description"], 100)
+            # Forming a message
+            return f"{data['name']}, {data['year']}\n\n{
+                textwrap.fill(data['description'], 100)
             }"
 
         return "Не удалось получить данные."
