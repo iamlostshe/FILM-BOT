@@ -5,7 +5,7 @@ description = "Telegram bot for selecting anime and doramas"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "pydantic-settings==2.9.1",
+    "pydantic-settings==2.11.0",
     "aiogram==3.20.0.post0",
     "loguru==0.7.3",
 ]
